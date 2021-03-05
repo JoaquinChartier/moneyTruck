@@ -7,10 +7,49 @@
     <title>Moving truck</title>
     <script src="https://cdn.ethers.io/lib/ethers-5.0.umd.min.js" type="application/javascript"></script>
     <script src="js/main.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <label id='lblSender'></label>
-    <input type='text' id='inputRecipient' placeholder='Copy recipient address: '>
-    <button onclick=""></button>
+    <div class="row">
+        <div>
+            <div class="wrapper-progressBar">
+                <ul class="progressBar">
+                    <li id="liOne" class="active">Select sender and recipient</li>
+                    <li id="liTwo">Select tokens</li>
+                    <li id="liThree">Approve tokens</li>
+                    <li id="liFour">Move!</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="divOne" class="stepDiv">
+        <!-- Select sender and recipient -->
+        <select name="selectChain">
+            <option value="ethereum">Ethereum</option>
+            <option value="binanceSmartChain">Binance Smart Chain</option>
+            <option value="fantomOpera">Fantom Opera</option>
+        </select>
+        <label id='lblSender'></label>
+        <input type='text' id='inputRecipient' placeholder='Copy recipient address: '>
+        <button type="button" class="btnNext">Next</button>
+    </div>
+    <div id="divTwo" class="stepDiv" style="display: none;">
+        <!-- Select tokens -->
+        <label>Select the tokens you want to send (max 20). If you want, you can include a tip to dev team (1% discounted from Ether sended)</label>
+        <button type="button" class="btnNext">Next</button>
+    </div>
+    <div id="divThree" class="stepDiv" style="display: none;">
+        <!-- Approve tokens -->
+        <label>Approve tokens</label>
+        <button type="button" class="btnNext">Next</button>
+    </div>
+    <div id="divFour" class="stepDiv" style="display: none;">
+        <!-- Send! -->
+        <label>When you are ready, click the button to move your money, all at once!</label>
+        <button type="button" class="btnMove">OK, Move!</button>
+    </div>
 </body>
 </html>

@@ -2,6 +2,8 @@ window.onload = async () => {
     let mtContractReader:any; //Can Read
     let mtContractSigner:any; //Can Sign
     let userAddress:any; //Metamask address
+    let selectedChain:string = 'ethereum';
+    let step:number = 1;
     const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b"; //MovingTruck contract address
     //Open metamask and load
     await window.ethereum.enable();
@@ -98,6 +100,29 @@ window.onload = async () => {
         moveTokens(0.08, [arr[0], arr[1]], numArray, "0x9EC19f9bed85e6d50AE77Ff7632fEBF04c2B5305",true);
     }
 
+    function nextStep(){
+        switch (step){
+            case 1:
+                document.getElementById("divOne").style.display = 'none';
+                document.getElementById("divTwo").style.display = 'block';
+                document.getElementById("liTwo").classList.add("active");
+                break;
+            case 2:
+                document.getElementById("divTwo").style.display = 'none';
+                document.getElementById("divThree").style.display = 'block';
+                document.getElementById("liThree").classList.add("active");
+                break;
+            case 3:
+                document.getElementById("divThree").style.display = 'none';
+                document.getElementById("divFour").style.display = 'block';
+                document.getElementById("liFour").classList.add("active");
+                break;
+            case 4:
+                break;
+        }
+        step += 1
+    }
+
     data = await getJSON("../ABI/movingTruck.json");
     const contractABI = data.abi;
     //Can read
@@ -110,6 +135,12 @@ window.onload = async () => {
     userAddress = await signer.getAddress(); //User address
     
     let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
-    test();
     document.getElementById("lblSender").innerHTML = txtAddress;
+
+    //Listeners
+    let btnList = document.getElementsByClassName("btnNext");
+    for (let i = 0; i < btnList.length; i++) {
+        const element = btnList[i];
+        element.addEventListener("click", nextStep);
+    }
 };
