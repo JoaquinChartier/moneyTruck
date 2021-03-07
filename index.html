@@ -27,18 +27,29 @@
 
     <div id="divOne" class="stepDiv">
         <!-- Select sender and recipient -->
-        <select name="selectChain">
-            <option value="ethereum">Ethereum</option>
-            <option value="binanceSmartChain">Binance Smart Chain</option>
-            <option value="fantomOpera">Fantom Opera</option>
-        </select>
+        <label>Select network: 
+            <select name="selectChain">
+                <option value="ethereum">Ethereum</option>
+                <option value="binanceSmartChain">Binance Smart Chain</option>
+                <option value="fantomOpera">Fantom Opera</option>
+            </select>
+        </label> 
         <label id='lblSender'></label>
-        <input type='text' id='inputRecipient' placeholder='Copy recipient address: '>
+        <label>Copy recipient address: <input type='text' id='inputRecipient' placeholder='Starts with 0x'></label>
         <button type="button" class="btnNext">Next</button>
     </div>
     <div id="divTwo" class="stepDiv" style="display: none;">
         <!-- Select tokens -->
         <label>Select the tokens you want to send (max 20). If you want, you can include a tip to dev team (1% discounted from Ether sended)</label>
+        <label>ETH value: <input id="inputEth" type="text" placeholder='Like 0.1559 ETH'></label>
+        <label>Include tip: <input id="inputTip" type="checkbox"></label>
+        <label>Select tokens: 
+            <select id="selectTokens" name="selectTokens"></select>
+        </label>
+        <label>Add token manually (paste contract address): <input id="inputToken" type="text" placeholder='Starts with 0x'></label>
+        <ul id="listTokens">
+            <!-- <li>DAi <input type="" placeholder="adsd"></li> -->
+        </ul>
         <button type="button" class="btnNext">Next</button>
     </div>
     <div id="divThree" class="stepDiv" style="display: none;">
@@ -48,6 +59,7 @@
     </div>
     <div id="divFour" class="stepDiv" style="display: none;">
         <!-- Send! -->
+        <label>Resume: </label>
         <label>When you are ready, click the button to move your money, all at once!</label>
         <button type="button" class="btnMove">OK, Move!</button>
     </div>

@@ -20,15 +20,27 @@ window.onload = async () => {
                 .then((data) => reject(data));
         });
     }
-    async function verifyToken(tokenContractAddress) {
-        let tokenContract = new ethers.Contract(tokenContractAddress, erc20ABI, provider);
-        let name = await tokenContract.name();
-        let symbol = await tokenContract.symbol();
-        let balance = await tokenContract.balanceOf(userAddress);
-        balance = ethers.utils.formatUnits(balance, 18);
-        let amountApproved = await tokenContract.allowance(userAddress, contractAddress);
-        amountApproved = ethers.utils.formatUnits(amountApproved, 18);
-        console.log(amountApproved, name, symbol, balance);
+    function verifyToken(tokenContractAddress) {
+        return new Promise(async (resolve, reject) => {
+            let tokenContract = new ethers.Contract(tokenContractAddress, erc20ABI, provider);
+            try {
+                let name = await tokenContract.name();
+                let symbol = await tokenContract.symbol();
+                let balance = await tokenContract.balanceOf(userAddress);
+                balance = ethers.utils.formatUnits(balance, 18);
+                let amountApproved = await tokenContract.allowance(userAddress, contractAddress);
+                amountApproved = ethers.utils.formatUnits(amountApproved, 18);
+                resolve({
+                    "amountApproved": amountApproved,
+                    "name": name,
+                    "symbol": symbol,
+                    "balance": balance
+                });
+            }
+            catch (error) {
+                reject(`An error ocurred while trying to fetch the token: ${error}`);
+            }
+        });
     }
     async function approveToken(tokenContractAddress) {
         let tokenContract = new ethers.Contract(tokenContractAddress, erc20ABI, provider);
@@ -49,9 +61,9 @@ window.onload = async () => {
             tokensArray.push("0x0000000000000000000000000000000000000000");
             quantityArray.push(0);
         }
-        ethValue = !ethValue || ethValue == undefined ? 0 : ethValue;
+        ethValue = !ethValue || ethValue == undefined ? "0" : ethValue;
         let overrides = {
-            value: ethers.utils.parseEther(ethValue.toString()),
+            value: ethers.utils.parseEther(ethValue),
         };
         let tx = await mtContractSigner.move(tokensArray, quantityArray, recipient, sendTip, overrides);
         console.log('tx', tx);
@@ -66,21 +78,69 @@ window.onload = async () => {
         let numArray = ['10', '12.5'];
         moveTokens(0.08, [arr[0], arr[1]], numArray, "0x9EC19f9bed85e6d50AE77Ff7632fEBF04c2B5305", true);
     }
+    function listAvailableTokens() {
+        getJSON("../data/contractAddresses.json")
+            .then((data) => {
+            var _a;
+            let tokensList = data[selectedChain].tokens;
+            for (let tokenName in tokensList) {
+                let optionToInsert = document.createElement('option');
+                optionToInsert.value = tokensList[tokenName];
+                optionToInsert.text = tokenName.toUpperCase();
+                (_a = document.getElementById("selectTokens")) === null || _a === void 0 ? void 0 : _a.appendChild(optionToInsert);
+            }
+        })
+            .catch(err => console.log(err));
+    }
+    function selectTokensChanged(text) {
+        var _a;
+        let input = document.createElement('input');
+        input.placeholder = 'Token quantity';
+        input.type = 'text';
+        let li = document.createElement("li");
+        li.innerText = `${text}: `;
+        li.appendChild(input);
+        (_a = document.getElementById("listTokens")) === null || _a === void 0 ? void 0 : _a.appendChild(li);
+    }
     function nextStep() {
+        var _a, _b;
         switch (step) {
             case 1:
+                listAvailableTokens();
                 document.getElementById("divOne").style.display = 'none';
-                document.getElementById("divTwo").style.display = 'block';
+                document.getElementById("divTwo").style.display = 'flex';
                 document.getElementById("liTwo").classList.add("active");
+                (_a = document.getElementById("selectTokens")) === null || _a === void 0 ? void 0 : _a.addEventListener('change', (e) => {
+                    var _a, _b;
+                    let text = (_b = (_a = e.target) === null || _a === void 0 ? void 0 : _a.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.innerText;
+                    selectTokensChanged(text);
+                });
+                (_b = document.getElementById("inputToken")) === null || _b === void 0 ? void 0 : _b.addEventListener('input', (e) => {
+                    var _a;
+                    let contractAddress = (_a = e.target) === null || _a === void 0 ? void 0 : _a.value;
+                    if (!/^(0x){1}[0-9a-fA-F]{40}$/i.test(contractAddress) && contractAddress.length !== 0) {
+                        alert('Please, paste a valid contract address');
+                    }
+                    else {
+                        if (contractAddress !== '') {
+                            verifyToken(contractAddress)
+                                .then((token) => {
+                                console.log(token);
+                                selectTokensChanged(token.symbol);
+                            })
+                                .catch(err => console.log(err));
+                        }
+                    }
+                });
                 break;
             case 2:
                 document.getElementById("divTwo").style.display = 'none';
-                document.getElementById("divThree").style.display = 'block';
+                document.getElementById("divThree").style.display = 'flex';
                 document.getElementById("liThree").classList.add("active");
                 break;
             case 3:
                 document.getElementById("divThree").style.display = 'none';
-                document.getElementById("divFour").style.display = 'block';
+                document.getElementById("divFour").style.display = 'flex';
                 document.getElementById("liFour").classList.add("active");
                 break;
             case 4:

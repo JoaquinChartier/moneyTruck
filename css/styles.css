@@ -1,73 +1,77 @@
 body {
-    background-color: dimgrey;
-    font-family: 'Nunito', sans-serif;
-    font-weight: bold;
+  background-color: dimgrey;
+  font-family: "Nunito", sans-serif;
+  font-weight: bold;
 }
 
 .wrapper-progressBar {
-    width: 100%
+  width: 100%;
 }
 
 .row {
-    height: 14vh;
-    margin: 20px;
-    border-radius: 10px;
-    background-color: transparent;
+  height: 14vh;
+  margin: 20px;
+  border-radius: 10px;
+  background-color: transparent;
 }
 
 .progressBar li {
-    list-style-type: none;
-    float: left;
-    width: 25%;
-    position: relative;
-    text-align: center;
+  list-style-type: none;
+  float: left;
+  width: 25%;
+  position: relative;
+  text-align: center;
 }
 
 .progressBar li:before {
-    content: " ";
-    line-height: 30px;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    border: 1px solid #ddd;
-    display: block;
-    text-align: center;
-    margin: 0 auto 10px;
-    background-color: white
+  content: " ";
+  line-height: 30px;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ddd;
+  display: block;
+  text-align: center;
+  margin: 0 auto 10px;
+  background-color: white;
 }
 
 .progressBar li:after {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 4px;
-    background-color: #ddd;
-    top: 15px;
-    left: -50%;
-    z-index: -1;
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background-color: #ddd;
+  top: 15px;
+  left: -50%;
+  z-index: -1;
 }
 
 .progressBar li:first-child:after {
-    content: none;
+  content: none;
 }
 
 .progressBar li.active {
-    color: dodgerblue;
+  color: dodgerblue;
 }
 
 .progressBar li.active:before {
-    border-color: dodgerblue;
-    background-color: dodgerblue
+  border-color: dodgerblue;
+  background-color: dodgerblue;
 }
 
 .progressBar .active:after {
-    background-color: dodgerblue;
+  background-color: dodgerblue;
 }
 
 .stepDiv {
-    margin: 20px;
-    border-radius: 10px;
-    background-color: azure;
-    height: 300px;
-    text-align: center;
+  margin: 20px;
+  border-radius: 10px;
+  background-color: azure;
+  height: 300px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  /* justify-items: center; */
+  flex-direction: column;
 }
