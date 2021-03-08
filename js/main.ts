@@ -4,6 +4,7 @@ window.onload = async () => {
     let userAddress:any; //Metamask address
     let selectedChain:string = 'ethereum';
     let step:number = 1;
+    let tokenInfoList:any[] = [];
     const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b"; //MovingTruck contract address
     //Open metamask and load
     await window.ethereum.enable();
@@ -33,20 +34,48 @@ window.onload = async () => {
                 provider
             );
             try {
+                //If it´s not a ERC20, will throw an error
                 let name = await tokenContract.name();
                 let symbol = await tokenContract.symbol();
+                // let balance = await tokenContract.balanceOf(userAddress);
+                // balance = ethers.utils.formatUnits(balance, 18);
+                // let amountApproved = await tokenContract.allowance(userAddress, contractAddress);
+                // amountApproved = ethers.utils.formatUnits(amountApproved, 18) //cast decimals
+                //console.log(amountApproved, name, symbol, balance);
+                resolve({
+                    // "amountApproved": amountApproved,
+                    "name": name,
+                    "symbol": symbol, 
+                    // "balance": balance,
+                    "address": tokenContractAddress
+                });
+            } catch (error) {
+                reject(`An error ocurred while trying to fetch the token: ${error}`);
+            }
+        });
+    }
+
+    function getBalanceAndApprovals(tokenContractAddress:string) : Promise<any>{
+        //get balance and approvals
+        return new Promise(async (resolve, reject) => {
+            let tokenContract = new ethers.Contract(
+                tokenContractAddress,
+                erc20ABI,
+                provider
+            );
+            try {
+                // console.log('sc ',tokenContractAddress);
+                //If it´s not a ERC20, will throw an error
                 let balance = await tokenContract.balanceOf(userAddress);
                 balance = ethers.utils.formatUnits(balance, 18);
                 let amountApproved = await tokenContract.allowance(userAddress, contractAddress);
                 amountApproved = ethers.utils.formatUnits(amountApproved, 18) //cast decimals
-                //console.log(amountApproved, name, symbol, balance);
                 resolve({
                     "amountApproved": amountApproved,
-                    "name": name,
-                    "symbol": symbol, 
-                    "balance": balance
+                    "balance": balance,
                 });
             } catch (error) {
+                console.log(error);
                 reject(`An error ocurred while trying to fetch the token: ${error}`);
             }
         });
@@ -102,14 +131,14 @@ window.onload = async () => {
     }
 
     function test(){
-        let arr = ["0x5164a7fEC539B2E54D2A2Cfb9324483F6F42DdbE", "0x14A7E77FbFC96e90F8A5Cbec53De86797aa67695"];
-        approveToken(arr[0]);
-        approveToken(arr[1]);
-        arr.forEach(element => {
-            verifyToken(element);
-        });
-        let numArray = ['10', '12.5'];
-        moveTokens(0.08, [arr[0], arr[1]], numArray, "0x9EC19f9bed85e6d50AE77Ff7632fEBF04c2B5305",true);
+        // let arr = ["0x5164a7fEC539B2E54D2A2Cfb9324483F6F42DdbE", "0x14A7E77FbFC96e90F8A5Cbec53De86797aa67695"];
+        // approveToken(arr[0]);
+        // approveToken(arr[1]);
+        // arr.forEach(element => {
+        //     verifyToken(element);
+        // });
+        // let numArray = ['10', '12.5'];
+        // moveTokens(0.08, [arr[0], arr[1]], numArray, "0x9EC19f9bed85e6d50AE77Ff7632fEBF04c2B5305",true);
     }
 
     function listAvailableTokens(){
@@ -127,15 +156,25 @@ window.onload = async () => {
         .catch(err => console.log(err));
     }
 
-    function selectTokensChanged(text:string){
-        //When selector is changed
-        let input = document.createElement('input');
-        input.placeholder = 'Token quantity';
-        input.type = 'text';
-        let li = document.createElement("li");
-        li.innerText = `${text}: `;
-        li.appendChild(input);
-        document.getElementById("listTokens")?.appendChild(li);
+    function selectTokensChanged(symbol:string, address:string){
+        getBalanceAndApprovals(address)
+        .then((token) => {
+            let balance:number = Number(token.balance);
+            let approved:number = (token.amountApproved == String(Number.MAX_SAFE_INTEGER)) ? -1 : Number(token.amountApproved); ///!!!!!
+            //When selector is changed
+            let input = document.createElement('input');
+            input.placeholder = 'Token quantity';
+            input.type = 'text';
+            input.setAttribute('address', address);
+            input.setAttribute('symbol', symbol);
+            input.setAttribute('balance', balance.toString());
+            input.setAttribute('approved', approved.toString());
+            let li = document.createElement("li");
+            li.innerText = `${symbol} - balance: ${balance} ->`;
+            li.appendChild(input);
+            document.getElementById("listTokens")?.appendChild(li);
+        })
+        .catch(err => console.log(err));
     }
 
     function nextStep(){
@@ -146,12 +185,15 @@ window.onload = async () => {
                 document.getElementById("divTwo").style.display = 'flex';
                 document.getElementById("liTwo").classList.add("active");
                 document.getElementById("selectTokens")?.addEventListener('change', (e) => { 
-                    //console.log(e.target.selectedOptions[0].innerText);
-                    let text = e.target?.selectedOptions[0]?.innerText;
-                    selectTokensChanged(text);
+                    //console.log(e.target.selectedOptions[0]);
+                    let event:any = e.target;
+                    let symbol = event.selectedOptions[0]?.innerText;
+                    let address = event.selectedOptions[0]?.value;
+                    selectTokensChanged(symbol, address);
                 });
                 document.getElementById("inputToken")?.addEventListener('input', (e) => {
-                    let contractAddress = e.target?.value;
+                    let event:any = e.target;
+                    let contractAddress = event.value;
                     // console.log(contractAddress.length);
                     if (!/^(0x){1}[0-9a-fA-F]{40}$/i.test(contractAddress) && contractAddress.length !== 0) {
                         alert('Please, paste a valid contract address');
@@ -159,10 +201,14 @@ window.onload = async () => {
                         if (contractAddress !== ''){
                             verifyToken(contractAddress)
                             .then((token) => {
-                                console.log(token);
-                                selectTokensChanged(token.symbol);
+                                // console.log(token);
+                                selectTokensChanged(token.symbol, token.address);
+                                document.getElementById("inputToken")?.value = '';
                             })
-                            .catch(err => console.log(err));
+                            .catch(err => { 
+                                console.log(err);
+                                alert('The requested address is not a ERC20 token');
+                            });
                         }
                     }
                 });
@@ -171,16 +217,57 @@ window.onload = async () => {
                 document.getElementById("divTwo").style.display = 'none';
                 document.getElementById("divThree").style.display = 'flex';
                 document.getElementById("liThree").classList.add("active");
+                let tokenList:any = document.getElementById("listTokens")?.childNodes;
+                tokenInfoList = [];
+                for (let i = 0; i < tokenList.length; i++) {
+                    const element:any = tokenList[i];
+                    tokenInfoList.push({
+                        "symbol": element.firstElementChild.attributes.symbol.value,
+                        "address":element.firstElementChild.attributes.address.value,
+                        "balance":element.firstElementChild.attributes.balance.value,
+                        "approved": element.firstElementChild.attributes.approved.value,
+                        "value": element.firstElementChild.value
+                    });
+                }
+
+                for (let e = 0; e < tokenInfoList.length; e++) {
+                    const element = tokenInfoList[e];
+                    // console.log(element)
+                    if (element.approved !== "-1") {
+                        let btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.textContent = `Approve ${element.symbol}`;
+                        btn.addEventListener('click', async () => {
+                            await approveToken(element.address);
+                        });
+                        let li = document.createElement("li");
+                        li.innerText = `Balance in ${element.symbol}: ${element.balance} `;
+                        li.appendChild(btn);
+                        document.getElementById("listTokensForApprove")?.appendChild(li);
+                    }
+                }
                 break;
             case 3:
                 document.getElementById("divThree").style.display = 'none';
                 document.getElementById("divFour").style.display = 'flex';
                 document.getElementById("liFour").classList.add("active");
-                break;
-            case 4:
+
+                let ethValue = document.getElementById("inputEth")?.value;
+                if (ethValue > 0){
+                    let li = document.createElement("li");
+                    li.innerText = `${ethValue} in ETH`;
+                    document.getElementById("resumeList")?.appendChild(li);
+                }
+                for (let e = 0; e < tokenInfoList.length; e++) {
+                    const element = tokenInfoList[e];
+                    let li = document.createElement("li");
+                    li.innerText = `${element.balance} in ${element.symbol}`;
+                    document.getElementById("resumeList")?.appendChild(li);
+                }
                 break;
         }
-        step += 1
+        step += 1;
+        console.log(step);
     }
 
     data = await getJSON("../ABI/movingTruck.json");
@@ -203,4 +290,19 @@ window.onload = async () => {
         const element = btnList[i];
         element.addEventListener("click", nextStep);
     }
+    document.getElementsByClassName("btnMove")[0].addEventListener('click', async () => {
+        let ethValue:string = document.getElementById("inputEth")?.value;
+        ethValue = (Number(ethValue) > 0) ? ethValue: "0";
+        let recipient:string = document.getElementById("inputRecipient")?.value;
+        let sendTip:boolean = document.getElementById("inputTip")?.checked;
+        let tokensArray:string[] = [];
+        let tokensQuantity:any[] = [];
+        for (let x = 0; x < tokenInfoList.length; x++) {
+            const element = tokenInfoList[x];
+            tokensArray.push(element.address);
+            tokensQuantity.push(element.value);
+        }
+        let tx = await moveTokens(ethValue,tokensArray, tokensQuantity,recipient, sendTip);
+        console.log('tx',tx);
+    });
 };

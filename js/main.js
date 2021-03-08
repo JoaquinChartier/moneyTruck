@@ -5,6 +5,7 @@ window.onload = async () => {
     let userAddress;
     let selectedChain = 'ethereum';
     let step = 1;
+    let tokenInfoList = [];
     const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b";
     await window.ethereum.enable();
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -26,18 +27,32 @@ window.onload = async () => {
             try {
                 let name = await tokenContract.name();
                 let symbol = await tokenContract.symbol();
+                resolve({
+                    "name": name,
+                    "symbol": symbol,
+                    "address": tokenContractAddress
+                });
+            }
+            catch (error) {
+                reject(`An error ocurred while trying to fetch the token: ${error}`);
+            }
+        });
+    }
+    function getBalanceAndApprovals(tokenContractAddress) {
+        return new Promise(async (resolve, reject) => {
+            let tokenContract = new ethers.Contract(tokenContractAddress, erc20ABI, provider);
+            try {
                 let balance = await tokenContract.balanceOf(userAddress);
                 balance = ethers.utils.formatUnits(balance, 18);
                 let amountApproved = await tokenContract.allowance(userAddress, contractAddress);
                 amountApproved = ethers.utils.formatUnits(amountApproved, 18);
                 resolve({
                     "amountApproved": amountApproved,
-                    "name": name,
-                    "symbol": symbol,
-                    "balance": balance
+                    "balance": balance,
                 });
             }
             catch (error) {
+                console.log(error);
                 reject(`An error ocurred while trying to fetch the token: ${error}`);
             }
         });
@@ -69,14 +84,6 @@ window.onload = async () => {
         console.log('tx', tx);
     }
     function test() {
-        let arr = ["0x5164a7fEC539B2E54D2A2Cfb9324483F6F42DdbE", "0x14A7E77FbFC96e90F8A5Cbec53De86797aa67695"];
-        approveToken(arr[0]);
-        approveToken(arr[1]);
-        arr.forEach(element => {
-            verifyToken(element);
-        });
-        let numArray = ['10', '12.5'];
-        moveTokens(0.08, [arr[0], arr[1]], numArray, "0x9EC19f9bed85e6d50AE77Ff7632fEBF04c2B5305", true);
     }
     function listAvailableTokens() {
         getJSON("../data/contractAddresses.json")
@@ -92,18 +99,28 @@ window.onload = async () => {
         })
             .catch(err => console.log(err));
     }
-    function selectTokensChanged(text) {
-        var _a;
-        let input = document.createElement('input');
-        input.placeholder = 'Token quantity';
-        input.type = 'text';
-        let li = document.createElement("li");
-        li.innerText = `${text}: `;
-        li.appendChild(input);
-        (_a = document.getElementById("listTokens")) === null || _a === void 0 ? void 0 : _a.appendChild(li);
+    function selectTokensChanged(symbol, address) {
+        getBalanceAndApprovals(address)
+            .then((token) => {
+            var _a;
+            let balance = Number(token.balance);
+            let approved = (token.amountApproved == String(Number.MAX_SAFE_INTEGER)) ? -1 : Number(token.amountApproved);
+            let input = document.createElement('input');
+            input.placeholder = 'Token quantity';
+            input.type = 'text';
+            input.setAttribute('address', address);
+            input.setAttribute('symbol', symbol);
+            input.setAttribute('balance', balance.toString());
+            input.setAttribute('approved', approved.toString());
+            let li = document.createElement("li");
+            li.innerText = `${symbol} - balance: ${balance} ->`;
+            li.appendChild(input);
+            (_a = document.getElementById("listTokens")) === null || _a === void 0 ? void 0 : _a.appendChild(li);
+        })
+            .catch(err => console.log(err));
     }
     function nextStep() {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f, _g;
         switch (step) {
             case 1:
                 listAvailableTokens();
@@ -112,12 +129,14 @@ window.onload = async () => {
                 document.getElementById("liTwo").classList.add("active");
                 (_a = document.getElementById("selectTokens")) === null || _a === void 0 ? void 0 : _a.addEventListener('change', (e) => {
                     var _a, _b;
-                    let text = (_b = (_a = e.target) === null || _a === void 0 ? void 0 : _a.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.innerText;
-                    selectTokensChanged(text);
+                    let event = e.target;
+                    let symbol = (_a = event.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.innerText;
+                    let address = (_b = event.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
+                    selectTokensChanged(symbol, address);
                 });
                 (_b = document.getElementById("inputToken")) === null || _b === void 0 ? void 0 : _b.addEventListener('input', (e) => {
-                    var _a;
-                    let contractAddress = (_a = e.target) === null || _a === void 0 ? void 0 : _a.value;
+                    let event = e.target;
+                    let contractAddress = event.value;
                     if (!/^(0x){1}[0-9a-fA-F]{40}$/i.test(contractAddress) && contractAddress.length !== 0) {
                         alert('Please, paste a valid contract address');
                     }
@@ -125,10 +144,14 @@ window.onload = async () => {
                         if (contractAddress !== '') {
                             verifyToken(contractAddress)
                                 .then((token) => {
-                                console.log(token);
-                                selectTokensChanged(token.symbol);
+                                var _a;
+                                selectTokensChanged(token.symbol, token.address);
+                                (_a = document.getElementById("inputToken")) === null || _a === void 0 ? void 0 : _a.value = '';
                             })
-                                .catch(err => console.log(err));
+                                .catch(err => {
+                                console.log(err);
+                                alert('The requested address is not a ERC20 token');
+                            });
                         }
                     }
                 });
@@ -137,16 +160,54 @@ window.onload = async () => {
                 document.getElementById("divTwo").style.display = 'none';
                 document.getElementById("divThree").style.display = 'flex';
                 document.getElementById("liThree").classList.add("active");
+                let tokenList = (_c = document.getElementById("listTokens")) === null || _c === void 0 ? void 0 : _c.childNodes;
+                tokenInfoList = [];
+                for (let i = 0; i < tokenList.length; i++) {
+                    const element = tokenList[i];
+                    tokenInfoList.push({
+                        "symbol": element.firstElementChild.attributes.symbol.value,
+                        "address": element.firstElementChild.attributes.address.value,
+                        "balance": element.firstElementChild.attributes.balance.value,
+                        "approved": element.firstElementChild.attributes.approved.value,
+                        "value": element.firstElementChild.value
+                    });
+                }
+                for (let e = 0; e < tokenInfoList.length; e++) {
+                    const element = tokenInfoList[e];
+                    if (element.approved !== "-1") {
+                        let btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.textContent = `Approve ${element.symbol}`;
+                        btn.addEventListener('click', async () => {
+                            await approveToken(element.address);
+                        });
+                        let li = document.createElement("li");
+                        li.innerText = `Balance in ${element.symbol}: ${element.balance} `;
+                        li.appendChild(btn);
+                        (_d = document.getElementById("listTokensForApprove")) === null || _d === void 0 ? void 0 : _d.appendChild(li);
+                    }
+                }
                 break;
             case 3:
                 document.getElementById("divThree").style.display = 'none';
                 document.getElementById("divFour").style.display = 'flex';
                 document.getElementById("liFour").classList.add("active");
-                break;
-            case 4:
+                let ethValue = (_e = document.getElementById("inputEth")) === null || _e === void 0 ? void 0 : _e.value;
+                if (ethValue > 0) {
+                    let li = document.createElement("li");
+                    li.innerText = `${ethValue} in ETH`;
+                    (_f = document.getElementById("resumeList")) === null || _f === void 0 ? void 0 : _f.appendChild(li);
+                }
+                for (let e = 0; e < tokenInfoList.length; e++) {
+                    const element = tokenInfoList[e];
+                    let li = document.createElement("li");
+                    li.innerText = `${element.balance} in ${element.symbol}`;
+                    (_g = document.getElementById("resumeList")) === null || _g === void 0 ? void 0 : _g.appendChild(li);
+                }
                 break;
         }
         step += 1;
+        console.log(step);
     }
     data = await getJSON("../ABI/movingTruck.json");
     const contractABI = data.abi;
@@ -160,4 +221,20 @@ window.onload = async () => {
         const element = btnList[i];
         element.addEventListener("click", nextStep);
     }
+    document.getElementsByClassName("btnMove")[0].addEventListener('click', async () => {
+        var _a, _b, _c;
+        let ethValue = (_a = document.getElementById("inputEth")) === null || _a === void 0 ? void 0 : _a.value;
+        ethValue = (Number(ethValue) > 0) ? ethValue : "0";
+        let recipient = (_b = document.getElementById("inputRecipient")) === null || _b === void 0 ? void 0 : _b.value;
+        let sendTip = (_c = document.getElementById("inputTip")) === null || _c === void 0 ? void 0 : _c.checked;
+        let tokensArray = [];
+        let tokensQuantity = [];
+        for (let x = 0; x < tokenInfoList.length; x++) {
+            const element = tokenInfoList[x];
+            tokensArray.push(element.address);
+            tokensQuantity.push(element.value);
+        }
+        let tx = await moveTokens(ethValue, tokensArray, tokensQuantity, recipient, sendTip);
+        console.log('tx', tx);
+    });
 };
