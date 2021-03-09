@@ -1,27 +1,41 @@
 window.onload = async () => {
     let mtContractReader:any; //Can Read
     let mtContractSigner:any; //Can Sign
-    let userAddress:any; //Metamask address
-    let selectedChain:string = 'ethereum';
+    let userAddress:any; //Metamask user address
     let step:number = 1;
     let tokenInfoList:any[] = [];
+    let selectedChain:string = "0";
     const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b"; //MovingTruck contract address
     //Open metamask and load
     await window.ethereum.enable();
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
     //Load ERC20 ABI
-    let data:any = await getJSON("../ABI/ERC20Preset.json");
-    const erc20ABI = data.abi;
+    let data:any = await getJSON("../ABI/ERC20.json");
+    const erc20ABI = data;
+    //Load movingTruck contract
+    data = await getJSON("../ABI/movingTruck.json");
+    const contractABI = data.abi;
+    mtContractReader = new ethers.Contract(
+        //This obj can read
+        contractAddress,
+        contractABI,
+        provider
+    );
+    mtContractSigner = mtContractReader.connect(signer); //Can sign
+    userAddress = await signer.getAddress(); //User address
+        
+    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
+    document.getElementById("lblSender").innerHTML = txtAddress;
 
     function getJSON(url:string) : Promise<any> {
         //Get JSON ABI
         return new Promise((resolve, reject) => {
-            fetch(url)
-                .then((response) => {
-                    resolve(response.json());
-                })
-                .then((data) => reject(data));
+        fetch(url)
+            .then((response) => {
+                resolve(response.json());
+            })
+            .then((data) => reject(data));
         });
     }
 
@@ -41,7 +55,6 @@ window.onload = async () => {
                 // balance = ethers.utils.formatUnits(balance, 18);
                 // let amountApproved = await tokenContract.allowance(userAddress, contractAddress);
                 // amountApproved = ethers.utils.formatUnits(amountApproved, 18) //cast decimals
-                //console.log(amountApproved, name, symbol, balance);
                 resolve({
                     // "amountApproved": amountApproved,
                     "name": name,
@@ -64,7 +77,6 @@ window.onload = async () => {
                 provider
             );
             try {
-                // console.log('sc ',tokenContractAddress);
                 //If it´s not a ERC20, will throw an error
                 let balance = await tokenContract.balanceOf(userAddress);
                 balance = ethers.utils.formatUnits(balance, 18);
@@ -184,8 +196,7 @@ window.onload = async () => {
                 document.getElementById("divOne").style.display = 'none';
                 document.getElementById("divTwo").style.display = 'flex';
                 document.getElementById("liTwo").classList.add("active");
-                document.getElementById("selectTokens")?.addEventListener('change', (e) => { 
-                    //console.log(e.target.selectedOptions[0]);
+                document.getElementById("selectTokens")?.addEventListener('change', (e) => {
                     let event:any = e.target;
                     let symbol = event.selectedOptions[0]?.innerText;
                     let address = event.selectedOptions[0]?.value;
@@ -194,16 +205,15 @@ window.onload = async () => {
                 document.getElementById("inputToken")?.addEventListener('input', (e) => {
                     let event:any = e.target;
                     let contractAddress = event.value;
-                    // console.log(contractAddress.length);
                     if (!/^(0x){1}[0-9a-fA-F]{40}$/i.test(contractAddress) && contractAddress.length !== 0) {
                         alert('Please, paste a valid contract address');
                     }else{
                         if (contractAddress !== ''){
                             verifyToken(contractAddress)
                             .then((token) => {
-                                // console.log(token);
                                 selectTokensChanged(token.symbol, token.address);
-                                document.getElementById("inputToken")?.value = '';
+                                let inputToken:any = document.getElementById("inputToken");
+                                inputToken.value = '';
                             })
                             .catch(err => { 
                                 console.log(err);
@@ -232,7 +242,6 @@ window.onload = async () => {
 
                 for (let e = 0; e < tokenInfoList.length; e++) {
                     const element = tokenInfoList[e];
-                    // console.log(element)
                     if (element.approved !== "-1") {
                         let btn = document.createElement('button');
                         btn.type = 'button';
@@ -252,7 +261,8 @@ window.onload = async () => {
                 document.getElementById("divFour").style.display = 'flex';
                 document.getElementById("liFour").classList.add("active");
 
-                let ethValue = document.getElementById("inputEth")?.value;
+                let inputEth:any = document.getElementById("inputEth");
+                let ethValue = inputEth.value;
                 if (ethValue > 0){
                     let li = document.createElement("li");
                     li.innerText = `${ethValue} in ETH`;
@@ -267,22 +277,19 @@ window.onload = async () => {
                 break;
         }
         step += 1;
-        console.log(step);
     }
 
-    data = await getJSON("../ABI/movingTruck.json");
-    const contractABI = data.abi;
-    //Can read
-    mtContractReader = new ethers.Contract(
-        contractAddress,
-        contractABI,
-        provider
-    );
-    mtContractSigner = mtContractReader.connect(signer); //Can sign
-    userAddress = await signer.getAddress(); //User address
+    async function networkChanged(newNetwork:any){
+        // let _network:any = await provider.getNetwork();
+        selectedChain =  newNetwork.chainId.toString();
+        if (selectedChain == "1" || selectedChain == "56" || selectedChain == "250" || selectedChain == "1337") {
+            console.log(selectedChain);
+        }else{
+            selectedChain = "0";
+            alert('The current network is unsupported, please switch your wallet to a supported one');
+        }
+    }
     
-    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
-    document.getElementById("lblSender").innerHTML = txtAddress;
 
     //Listeners
     let btnList = document.getElementsByClassName("btnNext");
@@ -291,10 +298,13 @@ window.onload = async () => {
         element.addEventListener("click", nextStep);
     }
     document.getElementsByClassName("btnMove")[0].addEventListener('click', async () => {
-        let ethValue:string = document.getElementById("inputEth")?.value;
+        let inputEth:any = document.getElementById("inputEth");
+        let ethValue:string = inputEth.value;
         ethValue = (Number(ethValue) > 0) ? ethValue: "0";
-        let recipient:string = document.getElementById("inputRecipient")?.value;
-        let sendTip:boolean = document.getElementById("inputTip")?.checked;
+        let inputRecipient:any = document.getElementById("inputRecipient");
+        let recipient:string = inputRecipient.value;
+        let inputTip:any = document.getElementById("inputTip");
+        let sendTip:boolean = inputTip.checked;
         let tokensArray:string[] = [];
         let tokensQuantity:any[] = [];
         for (let x = 0; x < tokenInfoList.length; x++) {
@@ -304,5 +314,14 @@ window.onload = async () => {
         }
         let tx = await moveTokens(ethValue,tokensArray, tokensQuantity,recipient, sendTip);
         console.log('tx',tx);
+    });
+    provider.on("network", (newNetwork:any, oldNetwork:any) => {
+        // When a Provider makes its initial connection, it emits a "network"
+        // event with a null oldNetwork along with the newNetwork. So, if the
+        // oldNetwork exists, it represents a changing network
+        if (oldNetwork) {
+            //window.location.reload();
+            networkChanged(newNetwork);
+        }
     });
 };

@@ -3,15 +3,22 @@ window.onload = async () => {
     let mtContractReader;
     let mtContractSigner;
     let userAddress;
-    let selectedChain = 'ethereum';
     let step = 1;
     let tokenInfoList = [];
+    let selectedChain = "0";
     const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b";
     await window.ethereum.enable();
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
-    let data = await getJSON("../ABI/ERC20Preset.json");
-    const erc20ABI = data.abi;
+    let data = await getJSON("../ABI/ERC20.json");
+    const erc20ABI = data;
+    data = await getJSON("../ABI/movingTruck.json");
+    const contractABI = data.abi;
+    mtContractReader = new ethers.Contract(contractAddress, contractABI, provider);
+    mtContractSigner = mtContractReader.connect(signer);
+    userAddress = await signer.getAddress();
+    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
+    document.getElementById("lblSender").innerHTML = txtAddress;
     function getJSON(url) {
         return new Promise((resolve, reject) => {
             fetch(url)
@@ -120,7 +127,7 @@ window.onload = async () => {
             .catch(err => console.log(err));
     }
     function nextStep() {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f;
         switch (step) {
             case 1:
                 listAvailableTokens();
@@ -144,9 +151,9 @@ window.onload = async () => {
                         if (contractAddress !== '') {
                             verifyToken(contractAddress)
                                 .then((token) => {
-                                var _a;
                                 selectTokensChanged(token.symbol, token.address);
-                                (_a = document.getElementById("inputToken")) === null || _a === void 0 ? void 0 : _a.value = '';
+                                let inputToken = document.getElementById("inputToken");
+                                inputToken.value = '';
                             })
                                 .catch(err => {
                                 console.log(err);
@@ -192,41 +199,46 @@ window.onload = async () => {
                 document.getElementById("divThree").style.display = 'none';
                 document.getElementById("divFour").style.display = 'flex';
                 document.getElementById("liFour").classList.add("active");
-                let ethValue = (_e = document.getElementById("inputEth")) === null || _e === void 0 ? void 0 : _e.value;
+                let inputEth = document.getElementById("inputEth");
+                let ethValue = inputEth.value;
                 if (ethValue > 0) {
                     let li = document.createElement("li");
                     li.innerText = `${ethValue} in ETH`;
-                    (_f = document.getElementById("resumeList")) === null || _f === void 0 ? void 0 : _f.appendChild(li);
+                    (_e = document.getElementById("resumeList")) === null || _e === void 0 ? void 0 : _e.appendChild(li);
                 }
                 for (let e = 0; e < tokenInfoList.length; e++) {
                     const element = tokenInfoList[e];
                     let li = document.createElement("li");
                     li.innerText = `${element.balance} in ${element.symbol}`;
-                    (_g = document.getElementById("resumeList")) === null || _g === void 0 ? void 0 : _g.appendChild(li);
+                    (_f = document.getElementById("resumeList")) === null || _f === void 0 ? void 0 : _f.appendChild(li);
                 }
                 break;
         }
         step += 1;
-        console.log(step);
     }
-    data = await getJSON("../ABI/movingTruck.json");
-    const contractABI = data.abi;
-    mtContractReader = new ethers.Contract(contractAddress, contractABI, provider);
-    mtContractSigner = mtContractReader.connect(signer);
-    userAddress = await signer.getAddress();
-    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
-    document.getElementById("lblSender").innerHTML = txtAddress;
+    async function networkChanged(newNetwork) {
+        selectedChain = newNetwork.chainId.toString();
+        if (selectedChain == "1" || selectedChain == "56" || selectedChain == "250" || selectedChain == "1337") {
+            console.log(selectedChain);
+        }
+        else {
+            selectedChain = "0";
+            alert('The current network is unsupported, please switch your wallet to a supported one');
+        }
+    }
     let btnList = document.getElementsByClassName("btnNext");
     for (let i = 0; i < btnList.length; i++) {
         const element = btnList[i];
         element.addEventListener("click", nextStep);
     }
     document.getElementsByClassName("btnMove")[0].addEventListener('click', async () => {
-        var _a, _b, _c;
-        let ethValue = (_a = document.getElementById("inputEth")) === null || _a === void 0 ? void 0 : _a.value;
+        let inputEth = document.getElementById("inputEth");
+        let ethValue = inputEth.value;
         ethValue = (Number(ethValue) > 0) ? ethValue : "0";
-        let recipient = (_b = document.getElementById("inputRecipient")) === null || _b === void 0 ? void 0 : _b.value;
-        let sendTip = (_c = document.getElementById("inputTip")) === null || _c === void 0 ? void 0 : _c.checked;
+        let inputRecipient = document.getElementById("inputRecipient");
+        let recipient = inputRecipient.value;
+        let inputTip = document.getElementById("inputTip");
+        let sendTip = inputTip.checked;
         let tokensArray = [];
         let tokensQuantity = [];
         for (let x = 0; x < tokenInfoList.length; x++) {
@@ -236,5 +248,10 @@ window.onload = async () => {
         }
         let tx = await moveTokens(ethValue, tokensArray, tokensQuantity, recipient, sendTip);
         console.log('tx', tx);
+    });
+    provider.on("network", (newNetwork, oldNetwork) => {
+        if (oldNetwork) {
+            networkChanged(newNetwork);
+        }
     });
 };
