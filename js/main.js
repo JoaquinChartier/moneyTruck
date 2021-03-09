@@ -111,7 +111,8 @@ window.onload = async () => {
             .then((token) => {
             var _a;
             let balance = Number(token.balance);
-            let approved = (token.amountApproved == String(Number.MAX_SAFE_INTEGER)) ? -1 : Number(token.amountApproved);
+            console.log('app', String(Number.MAX_SAFE_INTEGER), token.amountApproved);
+            let approved = (token.amountApproved == String(Number.MAX_SAFE_INTEGER) + '.0') ? -1 : Number(token.amountApproved);
             let input = document.createElement('input');
             input.placeholder = 'Token quantity';
             input.type = 'text';
@@ -181,6 +182,7 @@ window.onload = async () => {
                 }
                 for (let e = 0; e < tokenInfoList.length; e++) {
                     const element = tokenInfoList[e];
+                    console.log('list: ', element);
                     if (element.approved !== "-1") {
                         let btn = document.createElement('button');
                         btn.type = 'button';

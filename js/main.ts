@@ -172,7 +172,8 @@ window.onload = async () => {
         getBalanceAndApprovals(address)
         .then((token) => {
             let balance:number = Number(token.balance);
-            let approved:number = (token.amountApproved == String(Number.MAX_SAFE_INTEGER)) ? -1 : Number(token.amountApproved); ///!!!!!
+            console.log('app', String(Number.MAX_SAFE_INTEGER), token.amountApproved)
+            let approved:number = (token.amountApproved == String(Number.MAX_SAFE_INTEGER)+'.0') ? -1 : Number(token.amountApproved); ///!!!!!
             //When selector is changed
             let input = document.createElement('input');
             input.placeholder = 'Token quantity';
@@ -242,6 +243,7 @@ window.onload = async () => {
 
                 for (let e = 0; e < tokenInfoList.length; e++) {
                     const element = tokenInfoList[e];
+                    console.log('list: ', element)
                     if (element.approved !== "-1") {
                         let btn = document.createElement('button');
                         btn.type = 'button';
