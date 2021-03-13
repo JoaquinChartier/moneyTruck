@@ -6,7 +6,7 @@ window.onload = async () => {
     let step = 1;
     let tokenInfoList = [];
     let selectedChain = "0";
-    const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b";
+    const contractAddress = "0x2830e0eA7B8a89a1249B776A6E31aab9466127B9";
     await window.ethereum.enable();
     const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     const signer = provider.getSigner();
@@ -17,8 +17,7 @@ window.onload = async () => {
     mtContractReader = new ethers.Contract(contractAddress, contractABI, provider);
     mtContractSigner = mtContractReader.connect(signer);
     userAddress = await signer.getAddress();
-    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
-    document.getElementById("lblSender").innerHTML = txtAddress;
+    const contractAdresses = await getJSON("../data/contractAddresses.json");
     function getJSON(url) {
         return new Promise((resolve, reject) => {
             fetch(url)
@@ -90,21 +89,15 @@ window.onload = async () => {
         let tx = await mtContractSigner.move(tokensArray, quantityArray, recipient, sendTip, overrides);
         console.log('tx', tx);
     }
-    function test() {
-    }
     function listAvailableTokens() {
-        getJSON("../data/contractAddresses.json")
-            .then((data) => {
-            var _a;
-            let tokensList = data[selectedChain].tokens;
-            for (let tokenName in tokensList) {
-                let optionToInsert = document.createElement('option');
-                optionToInsert.value = tokensList[tokenName];
-                optionToInsert.text = tokenName.toUpperCase();
-                (_a = document.getElementById("selectTokens")) === null || _a === void 0 ? void 0 : _a.appendChild(optionToInsert);
-            }
-        })
-            .catch(err => console.log(err));
+        var _a;
+        let tokensList = contractAdresses[selectedChain].tokens;
+        for (let tokenName in tokensList) {
+            let optionToInsert = document.createElement('option');
+            optionToInsert.value = tokensList[tokenName];
+            optionToInsert.text = tokenName.toUpperCase();
+            (_a = document.getElementById("selectTokens")) === null || _a === void 0 ? void 0 : _a.appendChild(optionToInsert);
+        }
     }
     function selectTokensChanged(symbol, address) {
         getBalanceAndApprovals(address)
@@ -213,7 +206,7 @@ window.onload = async () => {
                 for (let e = 0; e < tokenInfoList.length; e++) {
                     const element = tokenInfoList[e];
                     let li = document.createElement("li");
-                    li.innerText = `${element.balance} in ${element.symbol}`;
+                    li.innerText = `${element.value} in ${element.symbol}`;
                     (_f = document.getElementById("resumeList")) === null || _f === void 0 ? void 0 : _f.appendChild(li);
                 }
                 break;
@@ -222,8 +215,8 @@ window.onload = async () => {
     }
     async function networkChanged(newNetwork) {
         selectedChain = newNetwork.chainId.toString();
-        if (selectedChain == "1" || selectedChain == "56" || selectedChain == "250" || selectedChain == "1337") {
-            console.log(selectedChain);
+        if (selectedChain == "1" || selectedChain == "3" || selectedChain == "56" || selectedChain == "250" || selectedChain == "1337") {
+            console.log(`Selected network -> ${selectedChain}, ${newNetwork.name}`);
         }
         else {
             selectedChain = "0";
@@ -256,6 +249,11 @@ window.onload = async () => {
     provider.on("network", (newNetwork, oldNetwork) => {
         if (oldNetwork) {
             networkChanged(newNetwork);
+            location.reload();
         }
     });
+    let initialNetwork = await provider.getNetwork();
+    networkChanged(initialNetwork);
+    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="${contractAdresses[selectedChain].scanUrl}address/${userAddress}">${contractAdresses[selectedChain].scanName}</a>`;
+    document.getElementById("lblSender").innerHTML = txtAddress;
 };

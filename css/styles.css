@@ -72,6 +72,6 @@ body {
   text-align: center;
   display: flex;
   align-items: center;
-  /* justify-items: center; */
   flex-direction: column;
+  /* justify-items: center; */
 }

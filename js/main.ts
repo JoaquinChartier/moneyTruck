@@ -5,7 +5,7 @@ window.onload = async () => {
     let step:number = 1;
     let tokenInfoList:any[] = [];
     let selectedChain:string = "0";
-    const contractAddress = "0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b"; //MovingTruck contract address
+    const contractAddress = "0x2830e0eA7B8a89a1249B776A6E31aab9466127B9"; //MovingTruck contract address 0xb1645DB7d8ba837b7eFcE0C41Ca53eC2123AFd5b
     //Open metamask and load
     await window.ethereum.enable();
     const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
@@ -24,9 +24,8 @@ window.onload = async () => {
     );
     mtContractSigner = mtContractReader.connect(signer); //Can sign
     userAddress = await signer.getAddress(); //User address
-        
-    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="https://etherscan.io/address/${userAddress}">Etherscan</a>`;
-    document.getElementById("lblSender").innerHTML = txtAddress;
+    //Contract addresses, other data
+    const contractAdresses = await getJSON("../data/contractAddresses.json");
 
     function getJSON(url:string) : Promise<any> {
         //Get JSON ABI
@@ -142,30 +141,15 @@ window.onload = async () => {
         console.log('tx', tx);
     }
 
-    function test(){
-        // let arr = ["0x5164a7fEC539B2E54D2A2Cfb9324483F6F42DdbE", "0x14A7E77FbFC96e90F8A5Cbec53De86797aa67695"];
-        // approveToken(arr[0]);
-        // approveToken(arr[1]);
-        // arr.forEach(element => {
-        //     verifyToken(element);
-        // });
-        // let numArray = ['10', '12.5'];
-        // moveTokens(0.08, [arr[0], arr[1]], numArray, "0x9EC19f9bed85e6d50AE77Ff7632fEBF04c2B5305",true);
-    }
-
     function listAvailableTokens(){
         //List tokens available by network
-        getJSON("../data/contractAddresses.json")
-        .then((data) => {
-            let tokensList = data[selectedChain].tokens;
-            for (let tokenName in tokensList) {
-                let optionToInsert = document.createElement('option');
-                optionToInsert.value = tokensList[tokenName];
-                optionToInsert.text = tokenName.toUpperCase();
-                document.getElementById("selectTokens")?.appendChild(optionToInsert);
-            }
-        })
-        .catch(err => console.log(err));
+        let tokensList = contractAdresses[selectedChain].tokens;
+        for (let tokenName in tokensList) {
+            let optionToInsert = document.createElement('option');
+            optionToInsert.value = tokensList[tokenName];
+            optionToInsert.text = tokenName.toUpperCase();
+            document.getElementById("selectTokens")?.appendChild(optionToInsert);
+        }
     }
 
     function selectTokensChanged(symbol:string, address:string){
@@ -275,7 +259,7 @@ window.onload = async () => {
                 for (let e = 0; e < tokenInfoList.length; e++) {
                     const element = tokenInfoList[e];
                     let li = document.createElement("li");
-                    li.innerText = `${element.balance} in ${element.symbol}`;
+                    li.innerText = `${element.value} in ${element.symbol}`;
                     document.getElementById("resumeList")?.appendChild(li);
                 }
                 break;
@@ -286,15 +270,14 @@ window.onload = async () => {
     async function networkChanged(newNetwork:any){
         // let _network:any = await provider.getNetwork();
         selectedChain =  newNetwork.chainId.toString();
-        if (selectedChain == "1" || selectedChain == "56" || selectedChain == "250" || selectedChain == "1337") {
-            console.log(selectedChain);
+        if (selectedChain == "1" || selectedChain == "3" || selectedChain == "56" || selectedChain == "250" || selectedChain == "1337") {
+            console.log(`Selected network -> ${selectedChain}, ${newNetwork.name}`);
         }else{
             selectedChain = "0";
             alert('The current network is unsupported, please switch your wallet to a supported one');
         }
     }
     
-
     //Listeners
     let btnList = document.getElementsByClassName("btnNext");
     for (let i = 0; i < btnList.length; i++) {
@@ -324,8 +307,15 @@ window.onload = async () => {
         // event with a null oldNetwork along with the newNetwork. So, if the
         // oldNetwork exists, it represents a changing network
         if (oldNetwork) {
-            //window.location.reload();
             networkChanged(newNetwork);
+            location.reload();
         }
     });
+    
+    //Initial network checking
+    let initialNetwork:any = await provider.getNetwork();
+    networkChanged(initialNetwork);
+
+    let txtAddress = `Your current address is ${userAddress}, it´s correct?. Check it on <a target="_blank" href="${contractAdresses[selectedChain].scanUrl}address/${userAddress}">${contractAdresses[selectedChain].scanName}</a>`;
+    document.getElementById("lblSender").innerHTML = txtAddress;
 };

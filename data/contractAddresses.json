@@ -4,8 +4,8 @@
       "dai": "0x6b175474e89094c44da98b954eedeac495271d0f",
       "snx": "0xc011a73ee8576fb46f5e1c5751ca3b9fe0af2a6f"
     },
-    "scanUrl": "",
-    "scanName": ""
+    "scanUrl": "https://etherscan.io/",
+    "scanName": "Etherscan"
   },
   "56": {
     "tokens": {
@@ -29,7 +29,7 @@
       "dai": "0xad6d458402f60fd3bd25163575031acdce07538d",
       "uni":"0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"
     },
-    "scanUrl": "",
-    "scanName": ""
+    "scanUrl": "https://ropsten.etherscan.io/",
+    "scanName": "Etherscan"
   }
 }
