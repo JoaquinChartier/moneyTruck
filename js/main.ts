@@ -199,9 +199,11 @@ window.onload = async () => {
                 document.getElementById("liTwo").classList.add("active");
                 document.getElementById("selectTokens")?.addEventListener('change', (e) => {
                     let event:any = e.target;
-                    let symbol = event.selectedOptions[0]?.innerText;
-                    let address = event.selectedOptions[0]?.value;
-                    selectTokensChanged(symbol, address);
+                    if (event.selectedOptions[0]?.value !== "none-"){
+                        let symbol = event.selectedOptions[0]?.innerText;
+                        let address = event.selectedOptions[0]?.value;
+                        selectTokensChanged(symbol, address);
+                    }
                 });
                 document.getElementById("inputToken")?.addEventListener('input', (e) => {
                     let event:any = e.target;

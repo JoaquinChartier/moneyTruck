@@ -136,11 +136,13 @@ window.onload = async () => {
                 document.getElementById("divTwo").style.display = 'flex';
                 document.getElementById("liTwo").classList.add("active");
                 (_a = document.getElementById("selectTokens")) === null || _a === void 0 ? void 0 : _a.addEventListener('change', (e) => {
-                    var _a, _b;
+                    var _a, _b, _c;
                     let event = e.target;
-                    let symbol = (_a = event.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.innerText;
-                    let address = (_b = event.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.value;
-                    selectTokensChanged(symbol, address);
+                    if (((_a = event.selectedOptions[0]) === null || _a === void 0 ? void 0 : _a.value) !== "none-") {
+                        let symbol = (_b = event.selectedOptions[0]) === null || _b === void 0 ? void 0 : _b.innerText;
+                        let address = (_c = event.selectedOptions[0]) === null || _c === void 0 ? void 0 : _c.value;
+                        selectTokensChanged(symbol, address);
+                    }
                 });
                 (_b = document.getElementById("inputToken")) === null || _b === void 0 ? void 0 : _b.addEventListener('input', (e) => {
                     let event = e.target;
